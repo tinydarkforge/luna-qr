@@ -6,6 +6,8 @@
   const MAX_INPUT_LENGTH = 4296;
   const LOGO_PADDING_RATIO = 0.18;
   const LOGO_RADIUS_RATIO = 0.18;
+  const LOGO_ECC_THRESHOLD = 20;
+  const SCAN_INTERVAL_MS = 300;
 
   const state = {
     qrDataUrl: null,
@@ -13,6 +15,9 @@
     logoImage: null,
     debounceTimer: null,
     generating: false,
+    scanTimer: null,
+    scanStream: null,
+    restoringHash: false,
   };
 
   const els = {
@@ -24,8 +29,14 @@
     msg: $("formMessage"),
     year: $("year"),
     clear: $("clearBtn"),
-    downloadPng: $("downloadBtn"),
+    downloadBtn: $("downloadBtn"),
     downloadSvg: $("downloadSvgBtn"),
+    formatSelect: $("formatSelect"),
+    scanBtn: $("scanBtn"),
+    scannerModal: $("scanner-modal"),
+    scannerVideo: $("scannerVideo"),
+    scannerCanvas: $("scannerCanvas"),
+    closeScannerBtn: $("closeScannerBtn"),
     removeLogo: $("removeLogoBtn"),
     ecc: $("eccSelect"),
     size: $("sizeRange"),
@@ -74,6 +85,7 @@
     const img = new Image();
     img.onload = () => res(img);
     img.onerror = rej;
+    img.crossOrigin = "anonymous";
     img.src = src;
   });
 
@@ -121,6 +133,7 @@
       state.qrDataUrl = null;
       state.qrSvg = null;
       updateButtons();
+      if (!state.restoringHash) pushHash();
       return;
     }
     setLoading(true);
@@ -159,6 +172,7 @@
       } else {
         state.qrSvg = svgString;
       }
+      if (!state.restoringHash) pushHash();
       setStatus("QR code updated");
       updateButtons();
     } catch (err) {
@@ -174,9 +188,46 @@
     }
   };
 
+  const pushHash = () => {
+    const params = new URLSearchParams();
+    if (els.input.value.trim()) params.set("text", els.input.value.trim());
+    const fg = els.fgColor.value;
+    const bg = els.bgColor.value;
+    if (fg !== "#000000") params.set("fg", fg);
+    if (bg !== "#ffffff") params.set("bg", bg);
+    if (els.ecc.value !== "M") params.set("ecc", els.ecc.value);
+    if (els.size.value !== "512") params.set("size", els.size.value);
+    if (els.margin.value !== "1") params.set("margin", els.margin.value);
+    if (els.bgMode.value !== "off") params.set("bgMode", els.bgMode.value);
+    if (els.frameToggle.checked) params.set("frame", "1");
+    if (els.logoSize.value !== "20") params.set("logoScale", els.logoSize.value);
+    const hash = params.toString();
+    history.replaceState(null, "", hash ? "#" + hash : window.location.pathname);
+  };
+
+  const pullHash = () => {
+    const hash = location.hash.slice(1);
+    if (!hash) return false;
+    const params = new URLSearchParams(hash);
+    let changed = false;
+    if (params.has("text")) { els.input.value = params.get("text"); changed = true; }
+    if (params.has("ecc")) { els.ecc.value = params.get("ecc"); changed = true; }
+    if (params.has("fg")) { els.fgColor.value = params.get("fg"); changed = true; }
+    if (params.has("bg")) { els.bgColor.value = params.get("bg"); changed = true; }
+    if (params.has("size")) { els.size.value = params.get("size"); changed = true; }
+    if (params.has("margin")) { els.margin.value = params.get("margin"); changed = true; }
+    if (params.has("bgMode")) { els.bgMode.value = params.get("bgMode"); changed = true; }
+    if (params.has("frame")) { els.frameToggle.checked = params.get("frame") === "1"; changed = true; }
+    if (params.has("logoScale")) { els.logoSize.value = params.get("logoScale"); changed = true; }
+    if (params.has("size")) {
+      els.sizePresets.forEach((btn) => btn.classList.toggle("active", parseInt(btn.dataset.size) === parseInt(params.get("size"))));
+    }
+    return changed;
+  };
+
   const updateButtons = () => {
     const hasQr = !!state.qrDataUrl;
-    els.downloadPng.disabled = !hasQr;
+    els.downloadBtn.disabled = !hasQr;
     els.downloadSvg.disabled = !hasQr;
   };
 
@@ -189,6 +240,11 @@
     els.sizeVal.textContent = els.size.value;
     els.marginVal.textContent = els.margin.value;
     els.logoSizeVal.textContent = els.logoSize.value;
+    const logoScale = parseInt(els.logoSize.value);
+    if (state.logoImage && logoScale > LOGO_ECC_THRESHOLD && els.ecc.value !== "H") {
+      els.ecc.value = "H";
+      showToast(`Logo ${logoScale}% — ECC auto-upgraded to Maximum for scannability`);
+    }
     debouncedGenerate();
   };
 
@@ -245,6 +301,79 @@
     handleInput();
   };
 
+  const downloadImage = () => {
+    const format = els.formatSelect.value;
+    const mimeTypes = { png: "image/png", jpeg: "image/jpeg", webp: "image/webp" };
+    const ext = format;
+    if (format === "png") {
+      const link = document.createElement("a");
+      link.download = `luna-${sanitizeFilename(els.input.value)}.${ext}`;
+      link.href = state.qrDataUrl;
+      link.click();
+      showToast("PNG Downloaded");
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.width;
+      c.height = img.height;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0);
+      const dataUrl = c.toDataURL(mimeTypes[format], 0.92);
+      const link = document.createElement("a");
+      link.download = `luna-${sanitizeFilename(els.input.value)}.${ext}`;
+      link.href = dataUrl;
+      link.click();
+      showToast(`${format.toUpperCase()} Downloaded`);
+    };
+    img.src = state.qrDataUrl;
+  };
+
+  const closeScanner = () => {
+    if (state.scanTimer) { clearInterval(state.scanTimer); state.scanTimer = null; }
+    if (state.scanStream) {
+      state.scanStream.getTracks().forEach((t) => t.stop());
+      state.scanStream = null;
+    }
+    els.scannerVideo.srcObject = null;
+    els.scannerModal.setAttribute("aria-hidden", "true");
+  };
+
+  const scanFrame = () => {
+    const video = els.scannerVideo;
+    if (video.readyState < 2) return;
+    const canvas = els.scannerCanvas;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code && code.data) {
+      els.input.value = code.data;
+      closeScanner();
+      generateQr();
+      showToast("QR code scanned");
+    }
+  };
+
+  const openScanner = async () => {
+    try {
+      state.scanStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 640 } }
+      });
+      els.scannerVideo.srcObject = state.scanStream;
+      els.scannerModal.setAttribute("aria-hidden", "false");
+      await els.scannerVideo.play();
+      state.scanTimer = setInterval(scanFrame, SCAN_INTERVAL_MS);
+    } catch {
+      setStatus("Camera access denied or unavailable", true);
+    }
+  };
+
   const init = () => {
     els.year.textContent = new Date().getFullYear();
     const savedTheme = localStorage.getItem("luna-theme") || "dark";
@@ -287,13 +416,7 @@
       setStatus("");
     });
 
-    els.downloadPng.addEventListener("click", () => {
-      const link = document.createElement("a");
-      link.download = `luna-${sanitizeFilename(els.input.value)}.png`;
-      link.href = state.qrDataUrl;
-      link.click();
-      showToast("PNG Downloaded");
-    });
+    els.downloadBtn.addEventListener("click", downloadImage);
 
     els.downloadSvg.addEventListener("click", () => {
       const blob = new Blob([state.qrSvg], { type: "image/svg+xml" });
@@ -304,6 +427,20 @@
       link.click();
       URL.revokeObjectURL(url);
       showToast("SVG Exported");
+    });
+
+    els.scanBtn.addEventListener("click", openScanner);
+    els.closeScannerBtn.addEventListener("click", closeScanner);
+    els.scannerModal.addEventListener("click", (e) => {
+      if (e.target === els.scannerModal || e.target.classList.contains("modal-glass")) closeScanner();
+    });
+
+    els.input.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        clearTimeout(state.debounceTimer);
+        generateQr();
+      }
     });
 
     els.themeBtns.forEach((btn) => {
@@ -336,7 +473,11 @@
 
     els.form.addEventListener("submit", (e) => e.preventDefault());
 
+    state.restoringHash = true;
+    const hasHash = pullHash();
     updateColorLabels();
+    if (hasHash) generateQr();
+    state.restoringHash = false;
   };
 
   if (document.readyState === "loading") {

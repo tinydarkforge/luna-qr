@@ -38,6 +38,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:;" />
 
     <script src="./js/vendor/qrcode.min.js" defer></script>
+    <script src="./js/vendor/jsqr.min.js" defer></script>
     <link rel="stylesheet" href="./css/styles.css" />
     <script src="./js/main.js" defer></script>
   </head>
@@ -88,12 +89,14 @@
             </div>
 
             <div class="action-bar">
-              <button id="downloadBtn" class="btn-primary" disabled>
-                Download PNG
-              </button>
-              <button id="downloadSvgBtn" class="btn-secondary" disabled>
-                Export SVG
-              </button>
+              <button id="downloadBtn" class="btn-primary" disabled>Download</button>
+              <select id="formatSelect" class="format-select">
+                <option value="png">PNG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="webp">WebP</option>
+              </select>
+              <button id="downloadSvgBtn" class="btn-secondary" disabled>SVG</button>
+              <button id="scanBtn" class="btn-secondary">Scan</button>
               <button id="clearBtn" class="btn-ghost">Reset</button>
             </div>
           </div>
@@ -229,6 +232,18 @@
         </div>
       </footer>
     </main>
+
+    <div id="scanner-modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="modal-glass"></div>
+      <div class="scanner-modal-content">
+        <video id="scannerVideo" autoplay playsinline></video>
+        <canvas id="scannerCanvas" hidden></canvas>
+        <div class="scanner-actions">
+          <span class="scanner-hint">Point camera at a QR code</span>
+          <button id="closeScannerBtn" class="btn-primary">Cancel</button>
+        </div>
+      </div>
+    </div>
 
     <div id="privacy-modal" role="dialog" aria-modal="true" aria-hidden="true">
       <div class="modal-glass"></div>

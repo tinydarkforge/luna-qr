@@ -130,8 +130,8 @@ body {
 
 .main-layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 1.25rem;
+  grid-template-columns: 1fr 324px;
+  gap: 1.125rem;
   flex: 1;
   min-height: 0;
 }
@@ -149,7 +149,7 @@ body {
 /* ─── Controls Panel ─── */
 
 .controls-panel {
-  padding: 1.25rem;
+  padding: 1.125rem;
   display: flex;
   flex-direction: column;
 }
@@ -548,8 +548,8 @@ input[type="range"]:focus::-webkit-slider-thumb {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem;
-  gap: 1rem;
+  padding: 1.125rem;
+  gap: 0.875rem;
   text-align: center;
 }
 
@@ -660,7 +660,7 @@ input[type="range"]:focus::-webkit-slider-thumb {
 
 .action-bar {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.35rem;
   width: 100%;
 }
 
@@ -670,6 +670,21 @@ input[type="range"]:focus::-webkit-slider-thumb {
 
 .action-bar .btn-secondary {
   flex: 1;
+}
+
+.format-select {
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0 0.4rem;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  background: var(--button-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  appearance: none;
+  min-width: 56px;
+  text-align: center;
 }
 
 /* ─── Buttons ─── */
@@ -903,6 +918,64 @@ button:disabled {
 
 @keyframes fadeOut {
   to { opacity: 0; transform: translateY(6px); }
+}
+
+/* ─── Scanner Modal ─── */
+
+#scanner-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+#scanner-modal[aria-hidden="false"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scanner-modal-content {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  z-index: 1;
+  transform: translateY(12px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, border-color 0.2s;
+}
+
+#scanner-modal[aria-hidden="false"] .scanner-modal-content {
+  transform: translateY(0);
+}
+
+#scannerVideo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #000;
+}
+
+.scanner-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.scanner-hint {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 /* ─── Utility ─── */
