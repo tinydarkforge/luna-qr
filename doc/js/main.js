@@ -12,12 +12,15 @@
     qrSvg: null,
     logoImage: null,
     debounceTimer: null,
+    generating: false,
   };
 
   const els = {
     input: $("inputText"),
     form: $("qrForm"),
     qrImage: $("qrImage"),
+    qrLoading: $("qrLoading"),
+    qrEmptyState: $("qrEmptyState"),
     msg: $("formMessage"),
     year: $("year"),
     clear: $("clearBtn"),
@@ -28,12 +31,18 @@
     size: $("sizeRange"),
     margin: $("marginRange"),
     bgMode: $("bgModeSelect"),
+    fgColor: $("fgColor"),
+    bgColor: $("bgColor"),
     logo: $("logoInput"),
+    logoPreview: $("logoPreview"),
+    logoDummy: $("logoDummy"),
     logoSize: $("logoSizeRange"),
     sizeVal: $("sizeValue"),
     marginVal: $("marginValue"),
     logoSizeVal: $("logoSizeValue"),
     logoControls: $("logoControls"),
+    frameToggle: $("frameToggle"),
+    sizePresets: $$(".size-preset"),
     modal: $("privacy-modal"),
     closeModal: $("close-modal"),
     privacyBtn: $("privacy-btn"),
@@ -63,21 +72,25 @@
 
   const loadImage = (src) => new Promise((res, rej) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
     img.onload = () => res(img);
     img.onerror = rej;
     img.src = src;
   });
 
+  const setLoading = (loading) => {
+    state.generating = loading;
+    els.qrLoading.classList.toggle("hidden", !loading);
+    els.qrLoading.setAttribute("aria-hidden", (!loading).toString());
+  };
+
   const getQrOptions = () => {
-    const bgMode = els.bgMode.value;
-    const light = bgMode === "transparent" ? "#0000" : bgMode === "dark" ? "#03050a" : "#ffffff";
-    const dark = bgMode === "dark" ? "#f0f4ff" : "#000000";
+    const fg = els.fgColor.value;
+    const bg = els.bgMode.value === "transparent" ? "#0000" : els.bgColor.value;
     return {
       width: parseInt(els.size.value),
       margin: parseInt(els.margin.value),
       errorCorrectionLevel: els.ecc.value,
-      color: { dark, light },
+      color: { dark: fg, light: bg },
       type: "image/png"
     };
   };
@@ -104,19 +117,37 @@
     const text = els.input.value.trim();
     if (!text) {
       els.qrImage.src = "./assets/placeholder.svg";
+      els.qrEmptyState.classList.remove("hidden");
       state.qrDataUrl = null;
       state.qrSvg = null;
       updateButtons();
       return;
     }
+    setLoading(true);
     try {
       const options = getQrOptions();
       const canvas = document.createElement("canvas");
       await QRCode.toCanvas(canvas, text, options);
+      els.qrEmptyState.classList.add("hidden");
       if (state.logoImage) {
         addLogoToCanvas(canvas, state.logoImage, parseInt(els.logoSize.value));
       }
-      state.qrDataUrl = canvas.toDataURL("image/png");
+      if (els.frameToggle.checked) {
+        const framed = document.createElement("canvas");
+        framed.width = canvas.width;
+        framed.height = canvas.height + 28;
+        const fctx = framed.getContext("2d");
+        fctx.fillStyle = els.bgMode.value === "transparent" ? "#ffffff" : els.bgColor.value;
+        fctx.fillRect(0, 0, framed.width, framed.height);
+        fctx.drawImage(canvas, 0, 14);
+        fctx.fillStyle = els.fgColor.value;
+        fctx.font = "11px Plus Jakarta Sans, sans-serif";
+        fctx.textAlign = "center";
+        fctx.fillText("lunaqr.app", framed.width / 2, framed.height - 5);
+        state.qrDataUrl = framed.toDataURL("image/png");
+      } else {
+        state.qrDataUrl = canvas.toDataURL("image/png");
+      }
       els.qrImage.src = state.qrDataUrl;
       const svgString = await QRCode.toString(text, { ...options, type: "svg" });
       if (state.logoImage) {
@@ -132,7 +163,14 @@
       updateButtons();
     } catch (err) {
       console.error(err);
-      setStatus("Generation failed", true);
+      const msg = err.message || "";
+      if (msg.includes("Invalid data")) {
+        setStatus("Text too long for this error correction level. Try 'Robust' or 'Maximum'.", true);
+      } else {
+        setStatus("Generation failed: " + (msg || "unknown error"), true);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -154,6 +192,13 @@
     debouncedGenerate();
   };
 
+  const updateColorLabels = () => {
+    const fgLabel = els.fgColor.parentElement.querySelector(".color-label");
+    const bgLabel = els.bgColor.parentElement.querySelector(".color-label");
+    if (fgLabel) fgLabel.textContent = els.fgColor.value;
+    if (bgLabel) bgLabel.textContent = els.bgColor.value;
+  };
+
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -161,11 +206,22 @@
       setStatus("Logo too large (max 2MB)", true);
       return;
     }
+    if (!file.type.startsWith("image/")) {
+      setStatus("Please upload an image file", true);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = async (event) => {
-      state.logoImage = await loadImage(event.target.result);
-      els.logoControls.classList.remove("hidden");
-      generateQr();
+      try {
+        state.logoImage = await loadImage(event.target.result);
+        els.logoControls.classList.remove("hidden");
+        els.logoPreview.src = event.target.result;
+        els.logoPreview.classList.remove("hidden");
+        els.logoDummy.classList.add("hidden");
+        generateQr();
+      } catch {
+        setStatus("Failed to load image. Try a different file.", true);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -180,22 +236,41 @@
     });
   };
 
+  const setSize = (size) => {
+    els.size.value = String(size);
+    els.sizeVal.textContent = size;
+    els.sizePresets.forEach((btn) => {
+      btn.classList.toggle("active", parseInt(btn.dataset.size) === size);
+    });
+    handleInput();
+  };
+
   const init = () => {
     els.year.textContent = new Date().getFullYear();
     const savedTheme = localStorage.getItem("luna-theme") || "dark";
     setTheme(savedTheme);
 
     els.input.addEventListener("input", debouncedGenerate);
-    [els.size, els.margin, els.ecc, els.bgMode, els.logoSize].forEach((el) => {
+    [els.size, els.margin, els.ecc, els.bgMode, els.logoSize, els.fgColor, els.bgColor, els.frameToggle].forEach((el) => {
       el.addEventListener("input", handleInput);
     });
 
+    els.fgColor.addEventListener("input", updateColorLabels);
+    els.bgColor.addEventListener("input", updateColorLabels);
+
     els.logo.addEventListener("change", handleLogoUpload);
+
+    els.sizePresets.forEach((btn) => {
+      btn.addEventListener("click", () => setSize(parseInt(btn.dataset.size)));
+    });
 
     els.removeLogo.addEventListener("click", () => {
       state.logoImage = null;
       els.logo.value = "";
       els.logoControls.classList.add("hidden");
+      els.logoPreview.classList.add("hidden");
+      els.logoPreview.src = "";
+      els.logoDummy.classList.remove("hidden");
       generateQr();
     });
 
@@ -204,6 +279,10 @@
       state.logoImage = null;
       els.logo.value = "";
       els.logoControls.classList.add("hidden");
+      els.logoPreview.classList.add("hidden");
+      els.logoPreview.src = "";
+      els.logoDummy.classList.remove("hidden");
+      els.qrEmptyState.classList.remove("hidden");
       generateQr();
       setStatus("");
     });
@@ -256,6 +335,8 @@
     });
 
     els.form.addEventListener("submit", (e) => e.preventDefault());
+
+    updateColorLabels();
   };
 
   if (document.readyState === "loading") {

@@ -29,21 +29,15 @@
 
     <title>LunaQR | Fast, Private, Premium</title>
     <link rel="icon" type="image/png" href="./assets/luna.webp" />
-    <meta name="google-adsense-account" content="ca-pub-6433842942378095" />
-
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap"
       rel="stylesheet"
     />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:;" />
 
     <script src="./js/vendor/qrcode.min.js" defer></script>
-    <script
-      async
-      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6433842942378095"
-      crossorigin="anonymous"
-    ></script>
     <link rel="stylesheet" href="./css/styles.css" />
     <script src="./js/main.js" defer></script>
   </head>
@@ -71,6 +65,10 @@
         <section class="preview-panel">
           <div class="preview-card card">
             <div id="qrContainer" class="qr-canvas-wrap">
+              <div id="qrLoading" class="qr-loading hidden" aria-hidden="true">
+                <div class="spinner"></div>
+                <span>Generating…</span>
+              </div>
               <img
                 src="./assets/placeholder.svg"
                 alt="QR Preview"
@@ -78,6 +76,15 @@
                 width="512"
                 height="512"
               />
+              <div id="qrEmptyState" class="qr-empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                  <line x1="6" y1="10" x2="6" y2="14"/><line x1="10" y1="6" x2="14" y2="6"/>
+                  <line x1="18" y1="10" x2="18" y2="14"/><line x1="10" y1="18" x2="14" y2="18"/>
+                </svg>
+                <span>Enter URL or text to generate your QR code</span>
+              </div>
             </div>
 
             <div class="action-bar">
@@ -139,10 +146,25 @@
               </div>
 
               <div class="setting">
-                <label for="bgModeSelect">Appearance</label>
+                <label for="fgColor">Foreground</label>
+                <div class="color-wrap">
+                  <input id="fgColor" type="color" value="#000000" />
+                  <span class="color-label">Black</span>
+                </div>
+              </div>
+
+              <div class="setting">
+                <label for="bgColor">Background</label>
+                <div class="color-wrap">
+                  <input id="bgColor" type="color" value="#ffffff" />
+                  <span class="color-label">White</span>
+                </div>
+              </div>
+
+              <div class="setting">
+                <label for="bgModeSelect">Bg Mode</label>
                 <select id="bgModeSelect">
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
+                  <option value="off">Off</option>
                   <option value="transparent">Transparent</option>
                 </select>
               </div>
@@ -150,9 +172,14 @@
               <div class="setting full-width">
                 <div class="label-row">
                   <label for="sizeRange">Resolution</label>
-                  <span class="value-tag"><span id="sizeValue">512</span>px</span>
+                  <div class="size-presets">
+                    <button type="button" class="size-preset" data-size="256">SM</button>
+                    <button type="button" class="size-preset" data-size="512">MD</button>
+                    <button type="button" class="size-preset active" data-size="1024">LG</button>
+                  </div>
                 </div>
                 <input id="sizeRange" type="range" min="256" max="1024" step="64" value="512" />
+                <span class="value-tag"><span id="sizeValue">512</span>px</span>
               </div>
 
               <div class="setting full-width">
@@ -165,12 +192,13 @@
 
               <div class="setting full-width logo-setting">
                 <label>Branding</label>
-                <div class="file-upload-wrapper">
+                <div class="file-upload-wrapper" id="logoUploadArea">
                   <input id="logoInput" type="file" accept="image/png,image/jpeg,image/webp" />
-                  <div class="file-dummy">
+                  <div class="file-dummy" id="logoDummy">
                     <span class="upload-icon">+</span>
                     <span class="upload-text">Upload Logo</span>
                   </div>
+                  <img id="logoPreview" class="hidden" alt="Logo preview" />
                 </div>
                 <div id="logoControls" class="hidden">
                   <div class="label-row">
@@ -180,6 +208,13 @@
                   <input id="logoSizeRange" type="range" min="12" max="30" step="1" value="20" />
                   <button id="removeLogoBtn" type="button" class="btn-text">Remove logo</button>
                 </div>
+              </div>
+
+              <div class="setting full-width">
+                <label class="toggle-row">
+                  <input id="frameToggle" type="checkbox" />
+                  <span>Labeled frame</span>
+                </label>
               </div>
             </div>
           </form>
@@ -202,7 +237,6 @@
         <div class="scroll-area">
           <p><strong>100% Client-Side.</strong> Your data never leaves your browser. We don't have a backend to store your URLs or text.</p>
           <p><strong>Local Storage.</strong> We only save your theme preference locally.</p>
-          <p><strong>Third-Parties.</strong> We use Google AdSense for hosting costs. They may use cookies for ad delivery.</p>
           <p><strong>Contact.</strong> <a href="mailto:luna-administrator@proton.me">luna-administrator@proton.me</a></p>
         </div>
         <button id="close-modal" class="btn-primary">Got it</button>
