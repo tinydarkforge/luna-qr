@@ -5,326 +5,205 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta
       name="description"
-      content="Generate QR codes instantly in your browser. No account, no server-side payload storage, fast download, and modern themes."
+      content="LumaQR: Generate premium, private QR codes instantly in your browser. No account, no server-side storage, fast PNG/SVG export with custom logos."
     />
     <meta name="robots" content="index,follow" />
-    <link rel="canonical" href="https://luma-qr.netlify.app/" />
+    <link rel="canonical" href="./" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="LumaQR Code Generator" />
+    <meta property="og:title" content="LumaQR | Premium QR Code Generator" />
     <meta
       property="og:description"
-      content="Generate QR codes instantly in your browser with a modern, privacy-first experience."
+      content="Generate high-quality QR codes instantly. Privacy-first, browser-based, and customizable themes."
     />
-    <meta
-      property="og:image"
-      content="https://luma-qr.netlify.app/assets/luna.webp"
-    />
-    <meta property="og:url" content="https://luma-qr.netlify.app/" />
+    <meta property="og:image" content="./assets/luna.webp" />
+    <meta property="og:url" content="./" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="LumaQR Code Generator" />
+    <meta name="twitter:title" content="LumaQR | Premium QR Code Generator" />
     <meta
       name="twitter:description"
-      content="Fast browser-based QR generator with downloadable PNG output and theme customization."
+      content="Fast browser-based QR generator with customizable themes and logo support."
     />
-    <meta
-      name="twitter:image"
-      content="https://luma-qr.netlify.app/assets/luna.webp"
-    />
+    <meta name="twitter:image" content="./assets/luna.webp" />
 
-    <title>LumaQR Generator | Fast, Private, Modern</title>
-    <link rel="icon" type="image/png" href="assets/luna.webp" />
+    <title>LumaQR | Fast, Private, Premium</title>
+    <link rel="icon" type="image/png" href="./assets/luna.webp" />
     <meta name="google-adsense-account" content="ca-pub-6433842942378095" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Sora:wght@600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap"
       rel="stylesheet"
     />
 
-    <script src="js/vendor/qrcode.min.js" defer></script>
+    <script src="./js/vendor/qrcode.min.js" defer></script>
     <script
       async
       src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6433842942378095"
       crossorigin="anonymous"
     ></script>
-    <link rel="stylesheet" href="css/styles.css" />
-    <script src="js/main.js" defer></script>
+    <link rel="stylesheet" href="./css/styles.css" />
+    <script src="./js/main.js" defer></script>
   </head>
   <body>
-    <div class="bg-orb orb-a" aria-hidden="true"></div>
-    <div class="bg-orb orb-b" aria-hidden="true"></div>
-    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <div class="glow-orb orb-1" aria-hidden="true"></div>
+    <div class="glow-orb orb-2" aria-hidden="true"></div>
+    <div id="toast-container" aria-live="polite"></div>
 
-    <main class="container">
-      <header class="hero">
-        <div class="hero-top">
-          <a
-            class="github-link"
-            href="https://github.com/Pamperito74/luna-qr"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="View LumaQR on GitHub"
-            >View on GitHub</a
-          >
-        </div>
-        <h1>LumaQR Generator</h1>
-        <p>
-          Create QR codes directly in your browser. We do not store the text you
-          enter. Ads may use cookies for ad delivery.
-        </p>
-        <div class="hero-chips" aria-hidden="true">
-          <span>Browser-only</span>
-          <span>PNG + SVG export</span>
-          <span>Logo-ready</span>
-        </div>
-        <div class="hero-links">
+    <main class="app-container">
+      <header class="app-header">
+        <div class="header-badge">
           <a
             href="https://github.com/Pamperito74/luna-qr"
             target="_blank"
             rel="noopener noreferrer"
-            >Repository</a
+            class="badge-link"
           >
-          <a
-            href="https://github.com/Pamperito74/luna-qr/issues"
-            target="_blank"
-            rel="noopener noreferrer"
-            >Report issue</a
-          >
+            <span class="badge-icon">GitHub</span>
+            <span class="badge-text">v1.1.0</span>
+          </a>
         </div>
+        <h1>Luma<span>QR</span></h1>
+        <p class="tagline">Private. Instant. Professional.</p>
       </header>
 
-      <section class="card" aria-labelledby="generator-title">
-        <div class="card-top">
-          <h2 id="generator-title">Generate</h2>
-          <div class="theme-wrap">
-            <label for="themeSelect" class="theme-label">Theme</label>
-            <select id="themeSelect" aria-label="Select color theme">
-              <option value="aurora">Aurora</option>
-              <option value="sunset">Sunset</option>
-              <option value="mint">Mint</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="workspace">
-          <div class="preview-pane">
-            <div id="qrContainer" class="qr">
-              <img
-                src="assets/moon.webp"
-                alt="Preview of generated QR code"
-                id="qrImage"
-                width="256"
-                height="256"
-                loading="eager"
-              />
+      <div class="main-layout">
+        <!-- Sidebar Controls -->
+        <aside class="controls-panel card">
+          <div class="panel-header">
+            <h2>Configuration</h2>
+            <div class="theme-picker">
+              <select id="themeSelect" aria-label="Select theme">
+                <option value="aurora">Aurora</option>
+                <option value="sunset">Sunset</option>
+                <option value="mint">Mint</option>
+              </select>
             </div>
           </div>
 
-          <div class="controls-pane">
-            <form id="qrForm" class="qr-form" novalidate>
-              <label for="inputText">Text, URL, or email</label>
-              <input
-                type="text"
+          <form id="qrForm" class="config-form" novalidate>
+            <div class="input-group">
+              <label for="inputText">Content</label>
+              <textarea
                 id="inputText"
-                placeholder="https://example.com"
-                autocomplete="off"
+                placeholder="Paste your URL or text here..."
+                rows="3"
                 maxlength="4296"
                 required
-              />
+              ></textarea>
+            </div>
 
-              <div class="option-grid">
-                <label for="eccSelect">Error correction</label>
-                <select id="eccSelect" aria-label="Error correction level">
+            <div class="settings-grid">
+              <div class="setting">
+                <label for="eccSelect">Resilience</label>
+                <select id="eccSelect">
                   <option value="M">Balanced</option>
                   <option value="L">Compact</option>
                   <option value="Q">Robust</option>
-                  <option value="H">Max resilient</option>
+                  <option value="H">Maximum</option>
                 </select>
+              </div>
 
-                <label for="sizeRange">Size <span id="sizeValue">512</span>px</label>
-                <input
-                  id="sizeRange"
-                  type="range"
-                  min="256"
-                  max="1024"
-                  step="64"
-                  value="512"
-                />
-
-                <label for="marginRange"
-                  >Margin <span id="marginValue">1</span></label
-                >
-                <input
-                  id="marginRange"
-                  type="range"
-                  min="0"
-                  max="6"
-                  step="1"
-                  value="1"
-                />
-
-                <label for="bgModeSelect">Background</label>
-                <select id="bgModeSelect" aria-label="QR background mode">
+              <div class="setting">
+                <label for="bgModeSelect">Appearance</label>
+                <select id="bgModeSelect">
                   <option value="light">Light</option>
                   <option value="dark">Dark</option>
                   <option value="transparent">Transparent</option>
                 </select>
-
-                <label for="logoInput">Center logo</label>
-                <input
-                  id="logoInput"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                />
-
-                <label for="logoSizeRange"
-                  >Logo size <span id="logoSizeValue">20</span>%</label
-                >
-                <input
-                  id="logoSizeRange"
-                  type="range"
-                  min="12"
-                  max="30"
-                  step="1"
-                  value="20"
-                />
-                <button id="removeLogoBtn" type="button" class="hidden">
-                  Remove logo
-                </button>
               </div>
-              <p id="formMessage" class="form-message" aria-live="polite"></p>
 
-              <div class="btn-row">
-                <button id="generateBtn" type="submit" class="btn-primary">
-                  Generate
-                </button>
-                <button id="clearBtn" type="button">Clear</button>
-                <button id="downloadBtn" type="button" class="hidden">
-                  Download PNG
-                </button>
-                <button id="downloadSvgBtn" type="button" class="hidden">
-                  Download SVG
-                </button>
+              <div class="setting full-width">
+                <div class="label-row">
+                  <label for="sizeRange">Resolution</label>
+                  <span class="value-tag"><span id="sizeValue">512</span>px</span>
+                </div>
+                <input id="sizeRange" type="range" min="256" max="1024" step="64" value="512" />
               </div>
-            </form>
 
-            <div class="support-block">
-              <p class="support-copy">Fund snacks and servers:</p>
-              <div class="donate-row" id="donate-buttons"></div>
+              <div class="setting full-width">
+                <div class="label-row">
+                  <label for="marginRange">Safe Margin</label>
+                  <span class="value-tag"><span id="marginValue">1</span></span>
+                </div>
+                <input id="marginRange" type="range" min="0" max="6" step="1" value="1" />
+              </div>
+
+              <div class="setting full-width logo-setting">
+                <label>Branding</label>
+                <div class="file-upload-wrapper">
+                  <input id="logoInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                  <div class="file-dummy">
+                    <span class="upload-icon">+</span>
+                    <span class="upload-text">Upload Logo</span>
+                  </div>
+                </div>
+                <div id="logoControls" class="hidden">
+                  <div class="label-row">
+                    <label for="logoSizeRange">Logo Scale</label>
+                    <span class="value-tag"><span id="logoSizeValue">20</span>%</span>
+                  </div>
+                  <input id="logoSizeRange" type="range" min="12" max="30" step="1" value="20" />
+                  <button id="removeLogoBtn" type="button" class="btn-text">Remove Logo</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </aside>
+
+        <!-- Preview Area -->
+        <section class="preview-panel">
+          <div class="preview-card card">
+            <div id="qrContainer" class="qr-canvas-wrap">
+              <img
+                src="./assets/moon.webp"
+                alt="QR Preview"
+                id="qrImage"
+                width="512"
+                height="512"
+              />
+            </div>
+            
+            <div class="action-bar">
+              <button id="downloadBtn" class="btn-primary" disabled>
+                Download PNG
+              </button>
+              <button id="downloadSvgBtn" class="btn-secondary" disabled>
+                Export SVG
+              </button>
+              <button id="clearBtn" class="btn-ghost">Reset</button>
             </div>
           </div>
+          
+          <div id="formMessage" class="status-message" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <footer class="app-footer">
+        <p>&copy; <span id="year"></span> LumaQR | Private Browser Generation</p>
+        <div class="footer-links">
+          <button id="privacy-btn">Privacy Policy</button>
+          <a href="https://github.com/Pamperito74/luna-qr" target="_blank" rel="noopener noreferrer">Source Code</a>
         </div>
-      </section>
-
-      <footer>
-        <p>
-          &copy; <span id="year"></span> LumaQR |
-          <a
-            href="https://github.com/Pamperito74/luna-qr"
-            target="_blank"
-            rel="noopener noreferrer"
-            >GitHub</a
-          |
-          <button id="privacy-btn" type="button">Privacy Policy</button> |
-          <button id="privacy-choices-btn" type="button">
-            Your Privacy Choices
-          </button>
-        </p>
       </footer>
+    </main>
 
-      <div
-        id="privacy-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="privacy-title"
-        aria-hidden="true"
-      >
+    <!-- Privacy Modal (Simplified for Premium feel) -->
+    <div id="privacy-modal" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="modal-glass">
         <div class="modal-content">
-          <h2 id="privacy-title">Privacy Policy</h2>
-          <p><strong>Effective Date:</strong> February 18, 2026</p>
-          <h3>1. What This App Processes</h3>
-          <p>
-            QR content is generated in your browser. We do not intentionally
-            store the text you enter to create a QR code.
-          </p>
-          <h3>2. Local Storage</h3>
-          <p>
-            We store your selected color theme in your browser's local storage
-            so it persists between visits. No personal data is stored or
-            transmitted.
-          </p>
-          <h3>3. Ads and Identifiers</h3>
-          <p>
-            We use Google AdSense. Google may use cookies or similar
-            identifiers to deliver and measure ads.
-          </p>
-          <p>
-            Depending on your region, ad-related processing may include
-            personalized or non-personalized ads.
-          </p>
-          <p>
-            Learn more:
-            <a
-              href="https://policies.google.com/technologies/ads"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Google Ads Policies</a
-            >
-          </p>
-          <h3 id="privacy-choices">4. Your Privacy Choices</h3>
-          <p>
-            Manage ad personalization:
-            <a
-              href="https://adssettings.google.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              >adssettings.google.com</a
-            >
-          </p>
-          <p>
-            You can also control cookies and tracking through your browser
-            settings and privacy extensions.
-          </p>
-          <p>
-            For applicable U.S. state privacy requests, contact us using the
-            email below with the subject line “Privacy Request”.
-          </p>
-          <h3>5. Regional Rights</h3>
-          <p>
-            Depending on where you live, you may have rights to request access,
-            deletion, correction, or to opt out of certain data uses. We will
-            review and respond to requests as required by applicable law.
-          </p>
-          <h3>6. Global Privacy Control</h3>
-          <p>
-            Where required by law, we honor valid Global Privacy Control (GPC)
-            signals as an opt-out preference signal.
-          </p>
-          <h3>7. Third-Party Links</h3>
-          <p>
-            This site may link to third-party websites. We are not responsible
-            for their privacy practices.
-          </p>
-          <h3>8. Changes</h3>
-          <p>
-            We may update this notice. We will revise the Effective Date when
-            changes are published.
-          </p>
-          <h3>9. Contact</h3>
-          <p>
-            Contact:
-            <a href="mailto:luna-administrator@proton.me"
-              >luna-administrator@proton.me</a
-            >
-          </p>
-          <div class="close-btn">
-            <button id="close-modal" type="button">Close</button>
+          <h2>Privacy at LumaQR</h2>
+          <div class="scroll-area">
+            <p><strong>100% Client-Side.</strong> Your data never leaves your browser. We don't have a backend to store your URLs or text.</p>
+            <p><strong>Local Storage.</strong> We only save your theme preference locally.</p>
+            <p><strong>Third-Parties.</strong> We use Google AdSense for hosting costs. They may use cookies for ad delivery.</p>
+            <p><strong>Contact.</strong> <a href="mailto:luna-administrator@proton.me">luna-administrator@proton.me</a></p>
           </div>
+          <button id="close-modal" class="btn-primary">Got it</button>
         </div>
       </div>
-    </main>
+    </div>
   </body>
 </html>

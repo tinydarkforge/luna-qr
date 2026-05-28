@@ -1,449 +1,283 @@
 (() => {
-  const q = (id) => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
+  const $$ = (selector) => document.querySelectorAll(selector);
 
-  const MAX_LOGO_BYTES = 2 * 1024 * 1024; // 2 MB
+  // Constants
+  const DEBOUNCE_MS = 300;
   const MAX_INPUT_LENGTH = 4296;
-  const DEBOUNCE_MS = 250;
+  const LOGO_PADDING_RATIO = 0.18;
+  const LOGO_RADIUS_RATIO = 0.18;
 
+  // State
   const state = {
     qrDataUrl: null,
     qrSvg: null,
-    lastInput: "",
     logoImage: null,
-    previousFocus: null,
-    qrLoaderPromise: null,
     debounceTimer: null,
   };
 
-  const input = q("inputText");
-  const qrForm = q("qrForm");
-  const formMessage = q("formMessage");
-  const clearBtn = q("clearBtn");
-  const downloadBtn = q("downloadBtn");
-  const downloadSvgBtn = q("downloadSvgBtn");
-  const logoInput = q("logoInput");
-  const logoSizeRange = q("logoSizeRange");
-  const logoSizeValue = q("logoSizeValue");
-  const removeLogoBtn = q("removeLogoBtn");
-  const qrImage = q("qrImage");
-  const donateButtonsContainer = q("donate-buttons");
-  const year = q("year");
-  const eccSelect = q("eccSelect");
-  const sizeRange = q("sizeRange");
-  const marginRange = q("marginRange");
-  const bgModeSelect = q("bgModeSelect");
-  const sizeValue = q("sizeValue");
-  const marginValue = q("marginValue");
+  // DOM Elements
+  const els = {
+    input: $("inputText"),
+    form: $("qrForm"),
+    qrImage: $("qrImage"),
+    msg: $("formMessage"),
+    year: $("year"),
+    theme: $("themeSelect"),
+    
+    // Buttons
+    generate: $("generateBtn"),
+    clear: $("clearBtn"),
+    downloadPng: $("downloadBtn"),
+    downloadSvg: $("downloadSvgBtn"),
+    removeLogo: $("removeLogoBtn"),
+    
+    // Settings
+    ecc: $("eccSelect"),
+    size: $("sizeRange"),
+    margin: $("marginRange"),
+    bgMode: $("bgModeSelect"),
+    logo: $("logoInput"),
+    logoSize: $("logoSizeRange"),
+    
+    // Values
+    sizeVal: $("sizeValue"),
+    marginVal: $("marginValue"),
+    logoSizeVal: $("logoSizeValue"),
+    
+    // Containers
+    logoControls: $("logoControls"),
+    modal: $("privacy-modal"),
+    closeModal: $("close-modal"),
+    privacyBtn: $("privacy-btn"),
+    toastContainer: $("toast-container")
+  };
 
-  const themeSelect = q("themeSelect");
-  const generateBtn = q("generateBtn");
-
-  const modal = q("privacy-modal");
-  const privacyBtn = q("privacy-btn");
-  const privacyChoicesBtn = q("privacy-choices-btn");
-  const closeModalBtn = q("close-modal");
-  const privacyChoicesHeading = q("privacy-choices");
-  const toastContainer = q("toast-container");
-
+  // Utilities
   const showToast = (message) => {
     const el = document.createElement("div");
     el.className = "toast";
     el.textContent = message;
-    toastContainer.appendChild(el);
+    els.toastContainer.appendChild(el);
     setTimeout(() => {
       el.classList.add("toast-out");
       el.addEventListener("animationend", () => el.remove());
-    }, 2800);
+    }, 3000);
   };
 
-  const setMessage = (message, isError = false) => {
-    formMessage.textContent = message;
-    formMessage.style.color = isError ? "#ffb4b4" : "";
-  };
-
-  const updateActionStates = () => {
-    const hasInput = input.value.trim().length > 0;
-    const hasQrPng = Boolean(state.qrDataUrl);
-    const hasQrSvg = Boolean(state.qrSvg);
-    const hasLogo = Boolean(state.logoImage);
-
-    generateBtn.disabled = !hasInput;
-    clearBtn.disabled = !hasInput && !hasQrPng && !hasLogo;
-
-    downloadBtn.disabled = !hasQrPng;
-    downloadSvgBtn.disabled = !hasQrSvg;
+  const setStatus = (msg, isError = false) => {
+    els.msg.textContent = msg;
+    els.msg.style.color = isError ? "var(--primary)" : "";
   };
 
   const sanitizeFilename = (text) => {
-    const slug = text
-      .trim()
-      .toLowerCase()
-      .replace(/https?:\/\//, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 40);
-    return slug || "qr-code";
+    return text.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30) || "qr-code";
   };
 
-  const readFileAsDataUrl = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
+  const loadImage = (src) => new Promise((res, rej) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
 
-  const loadImage = (src) =>
-    new Promise((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("Failed to load image"));
-      image.src = src;
-    });
-
-  const loadScript = (src) =>
-    new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = src;
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load ${src}`));
-      document.head.appendChild(script);
-    });
-
-  const ensureQrCodeReady = async () => {
-    if (typeof QRCode !== "undefined") return true;
-    if (state.qrLoaderPromise) return state.qrLoaderPromise;
-
-    const fallbackSources = [
-      "js/vendor/qrcode.min.js",
-      "https://unpkg.com/qrcode@1.3.0/build/qrcode.min.js",
-      "https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.3.0/qrcode.min.js",
-    ];
-
-    state.qrLoaderPromise = (async () => {
-      for (const src of fallbackSources) {
-        try {
-          await loadScript(src);
-          if (typeof QRCode !== "undefined") return true;
-        } catch (_err) {
-          // Try next source.
-        }
-      }
-      return false;
-    })();
-
-    return state.qrLoaderPromise;
-  };
-
-  const currentOptions = () => {
-    const bgMode = bgModeSelect.value;
-    const light =
-      bgMode === "transparent" ? "#0000" : bgMode === "dark" ? "#081110" : "#ffffff";
-    const dark = bgMode === "dark" ? "#f4fbff" : "#03080f";
+  // QR Logic
+  const getQrOptions = () => {
+    const bgMode = els.bgMode.value;
+    const light = bgMode === "transparent" ? "#0000" : bgMode === "dark" ? "#03050a" : "#ffffff";
+    const dark = bgMode === "dark" ? "#f0f4ff" : "#000000";
+    
     return {
-      width: Number(sizeRange.value),
-      margin: Number(marginRange.value),
-      errorCorrectionLevel: eccSelect.value,
-      color: {
-        dark,
-        light,
-      },
+      width: parseInt(els.size.value),
+      margin: parseInt(els.margin.value),
+      errorCorrectionLevel: els.ecc.value,
+      color: { dark, light },
+      type: "image/png"
     };
   };
 
-  const toDataUrl = (text, options) =>
-    new Promise((resolve, reject) => {
-      QRCode.toDataURL(text, options, (err, url) => {
-        if (err) reject(err);
-        else resolve(url);
-      });
-    });
-
-  const toSvg = (text, options) =>
-    new Promise((resolve, reject) => {
-      if (typeof QRCode.toString !== "function") {
-        reject(new Error("SVG export is unavailable"));
-        return;
-      }
-      QRCode.toString(text, { ...options, type: "svg" }, (err, value) => {
-        if (err) reject(err);
-        else resolve(value);
-      });
-    });
-
-  const addLogoOverlay = async (qrDataUrl) => {
-    if (!state.logoImage) return qrDataUrl;
-
-    const qrBase = await loadImage(qrDataUrl);
-    const canvas = document.createElement("canvas");
-    canvas.width = qrBase.naturalWidth || qrBase.width;
-    canvas.height = qrBase.naturalHeight || qrBase.height;
+  const addLogoToCanvas = (canvas, logo, scale) => {
     const ctx = canvas.getContext("2d");
-    if (!ctx) return qrDataUrl;
+    const size = Math.min(canvas.width, canvas.height);
+    const logoSize = size * (scale / 100);
+    const padding = logoSize * LOGO_PADDING_RATIO;
+    const totalSize = logoSize + padding * 2;
+    const x = (canvas.width - logoSize) / 2;
+    const y = (canvas.height - logoSize) / 2;
+    const bx = x - padding;
+    const by = y - padding;
+    const radius = totalSize * LOGO_RADIUS_RATIO;
 
-    ctx.drawImage(qrBase, 0, 0);
-
-    const logoScale = Number(logoSizeRange.value) / 100;
-    const target = Math.round(Math.min(canvas.width, canvas.height) * logoScale);
-    const padding = Math.round(target * 0.18);
-    const bgSize = target + padding * 2;
-    const x = Math.round((canvas.width - target) / 2);
-    const y = Math.round((canvas.height - target) / 2);
-    const bgX = x - padding;
-    const bgY = y - padding;
-    const radius = Math.round(bgSize * 0.18);
-
+    // Draw background rounded rect
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
-    ctx.moveTo(bgX + radius, bgY);
-    ctx.lineTo(bgX + bgSize - radius, bgY);
-    ctx.quadraticCurveTo(bgX + bgSize, bgY, bgX + bgSize, bgY + radius);
-    ctx.lineTo(bgX + bgSize, bgY + bgSize - radius);
-    ctx.quadraticCurveTo(bgX + bgSize, bgY + bgSize, bgX + bgSize - radius, bgY + bgSize);
-    ctx.lineTo(bgX + radius, bgY + bgSize);
-    ctx.quadraticCurveTo(bgX, bgY + bgSize, bgX, bgY + bgSize - radius);
-    ctx.lineTo(bgX, bgY + radius);
-    ctx.quadraticCurveTo(bgX, bgY, bgX + radius, bgY);
-    ctx.closePath();
+    ctx.roundRect(bx, by, totalSize, totalSize, radius);
     ctx.fill();
 
-    ctx.drawImage(state.logoImage, x, y, target, target);
-    return canvas.toDataURL("image/png");
+    // Draw logo
+    ctx.drawImage(logo, x, y, logoSize, logoSize);
   };
 
-  const generateQr = async (text) => {
-    const options = currentOptions();
+  const generateQr = async () => {
+    const text = els.input.value.trim();
+    if (!text) {
+      els.qrImage.src = "./assets/moon.webp";
+      state.qrDataUrl = null;
+      state.qrSvg = null;
+      updateButtons();
+      return;
+    }
+
     try {
-      const url = await toDataUrl(text, options);
-      const composedUrl = await addLogoOverlay(url);
-      qrImage.src = composedUrl;
-      state.qrDataUrl = composedUrl;
-      state.lastInput = text;
-      downloadBtn.classList.remove("hidden");
-      downloadBtn.disabled = false;
-      setMessage(
-        state.logoImage
-          ? "QR code generated with center logo."
-          : "QR code generated."
-      );
-
-      try {
-        state.qrSvg = await toSvg(text, options);
-        downloadSvgBtn.classList.remove("hidden");
-        downloadSvgBtn.disabled = false;
-      } catch (_svgErr) {
-        state.qrSvg = null;
-        downloadSvgBtn.classList.add("hidden");
-        downloadSvgBtn.disabled = true;
+      const options = getQrOptions();
+      
+      // Generate PNG
+      const canvas = document.createElement("canvas");
+      await QRCode.toCanvas(canvas, text, options);
+      
+      if (state.logoImage) {
+        addLogoToCanvas(canvas, state.logoImage, parseInt(els.logoSize.value));
       }
-      updateActionStates();
-    } catch (_err) {
-      setMessage("QR generation failed. Please try again.", true);
+      
+      state.qrDataUrl = canvas.toDataURL("image/png");
+      els.qrImage.src = state.qrDataUrl;
+
+      // Generate SVG
+      const svgString = await QRCode.toString(text, { ...options, type: "svg" });
+      
+      if (state.logoImage) {
+        // Embed logo in SVG
+        const logoBase64 = state.logoImage.src;
+        const logoSize = options.width * (parseInt(els.logoSize.value) / 100);
+        const pos = (options.width - logoSize) / 2;
+        
+        // Simple SVG injection for logo
+        const logoSvg = `<image href="${logoBase64}" x="${pos}" y="${pos}" width="${logoSize}" height="${logoSize}" />`;
+        state.qrSvg = svgString.replace("</svg>", `${logoSvg}</svg>`);
+      } else {
+        state.qrSvg = svgString;
+      }
+
+      setStatus("QR code updated");
+      updateButtons();
+    } catch (err) {
+      console.error(err);
+      setStatus("Generation failed", true);
     }
   };
 
-  qrForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  const updateButtons = () => {
+    const hasQr = !!state.qrDataUrl;
+    els.downloadPng.disabled = !hasQr;
+    els.downloadSvg.disabled = !hasQr;
+  };
 
-    const value = input.value.trim();
-    if (!value) {
-      setMessage("Please enter text, URL, or email first.", true);
-      input.focus();
-      return;
-    }
-
-    if (value.length > MAX_INPUT_LENGTH) {
-      setMessage(`Input too long (max ${MAX_INPUT_LENGTH} characters).`, true);
-      return;
-    }
-
-    generateBtn.classList.add("loading");
-
-    const qrReady = await ensureQrCodeReady();
-    if (!qrReady) {
-      generateBtn.classList.remove("loading");
-      setMessage(
-        "QR library is unavailable. Please disable blocker settings or try again.",
-        true
-      );
-      return;
-    }
-
-    await generateQr(value);
-    generateBtn.classList.remove("loading");
-  });
-
-  clearBtn.addEventListener("click", () => {
-    input.value = "";
-    qrImage.src = "assets/moon.webp";
-    state.qrDataUrl = null;
-    state.qrSvg = null;
-    state.lastInput = "";
-    downloadBtn.classList.add("hidden");
-    downloadSvgBtn.classList.add("hidden");
-    logoInput.value = "";
-    state.logoImage = null;
-    removeLogoBtn.classList.add("hidden");
-    setMessage("");
-    input.focus();
-    updateActionStates();
-  });
-
-  downloadBtn.addEventListener("click", () => {
-    if (!state.qrDataUrl) {
-      setMessage("Generate a QR code before downloading.", true);
-      return;
-    }
-
-    const filename = `lumaQR-${sanitizeFilename(state.lastInput)}.png`;
-    const a = document.createElement("a");
-    a.href = state.qrDataUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    showToast("PNG downloaded");
-  });
-
-  downloadSvgBtn.addEventListener("click", () => {
-    if (!state.qrSvg) {
-      setMessage("Generate a QR code before downloading.", true);
-      return;
-    }
-    const filename = `lumaQR-${sanitizeFilename(state.lastInput)}.svg`;
-    const blob = new Blob([state.qrSvg], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    if (state.logoImage) {
-      showToast("SVG exported without embedded logo. Use PNG to keep the logo.");
-    } else {
-      showToast("SVG downloaded");
-    }
-  });
-
-  const liveRegenerate = () => {
-    sizeValue.textContent = sizeRange.value;
-    marginValue.textContent = marginRange.value;
-    logoSizeValue.textContent = logoSizeRange.value;
-    updateActionStates();
-    if (!state.lastInput) return;
+  const debouncedGenerate = () => {
     clearTimeout(state.debounceTimer);
-    state.debounceTimer = setTimeout(() => generateQr(state.lastInput), DEBOUNCE_MS);
+    state.debounceTimer = setTimeout(generateQr, DEBOUNCE_MS);
   };
 
-  [eccSelect, sizeRange, marginRange, bgModeSelect, logoSizeRange].forEach((el) => {
-    el.addEventListener("input", liveRegenerate);
-    el.addEventListener("change", liveRegenerate);
-  });
+  // Event Handlers
+  const handleInput = () => {
+    els.sizeVal.textContent = els.size.value;
+    els.marginVal.textContent = els.margin.value;
+    els.logoSizeVal.textContent = els.logoSize.value;
+    debouncedGenerate();
+  };
 
-  logoInput.addEventListener("change", async () => {
-    const file = logoInput.files && logoInput.files[0];
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > MAX_LOGO_BYTES) {
-      setMessage("Logo file is too large (max 2 MB).", true);
-      logoInput.value = "";
+    if (file.size > 2 * 1024 * 1024) {
+      setStatus("Logo too large (max 2MB)", true);
       return;
     }
 
-    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      setMessage("Unsupported logo format. Use PNG, JPEG, or WebP.", true);
-      logoInput.value = "";
-      return;
-    }
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      state.logoImage = await loadImage(event.target.result);
+      els.logoControls.classList.remove("hidden");
+      generateQr();
+    };
+    reader.readAsDataURL(file);
+  };
 
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      state.logoImage = await loadImage(dataUrl);
-      removeLogoBtn.classList.remove("hidden");
-      if (state.lastInput) await generateQr(state.lastInput);
-      else setMessage("Logo loaded. Generate to apply.");
-      updateActionStates();
-    } catch (_err) {
-      setMessage("Could not load logo file.", true);
-    }
-  });
+  // Init
+  const init = () => {
+    // UI Init
+    els.year.textContent = new Date().getFullYear();
+    const savedTheme = localStorage.getItem("luma-theme") || "aurora";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    els.theme.value = savedTheme;
 
-  removeLogoBtn.addEventListener("click", async () => {
-    state.logoImage = null;
-    logoInput.value = "";
-    removeLogoBtn.classList.add("hidden");
-    if (state.lastInput) await generateQr(state.lastInput);
-    else setMessage("Logo removed.");
-    updateActionStates();
-  });
-
-  input.addEventListener("input", updateActionStates);
-
-  const donationAmounts = [1, 5, 10];
-  donationAmounts.forEach((amount) => {
-    const button = document.createElement("button");
-    button.className = "donate-button";
-    button.type = "button";
-    button.textContent = `$${amount}`;
-    button.setAttribute("aria-label", `Donate ${amount} US dollars with PayPal`);
-    button.addEventListener("click", () => {
-      const donationUrl = `https://www.paypal.com/donate?business=daniel.oceno@gmail.com&amount=${amount}&currency_code=USD`;
-      window.open(donationUrl, "_blank", "noopener,noreferrer");
+    // Listeners
+    els.input.addEventListener("input", debouncedGenerate);
+    [els.size, els.margin, els.ecc, els.bgMode, els.logoSize].forEach(el => {
+      el.addEventListener("input", handleInput);
     });
-    donateButtonsContainer.appendChild(button);
-  });
 
-  const openModal = () => {
-    state.previousFocus = document.activeElement;
-    modal.setAttribute("aria-hidden", "false");
-    closeModalBtn.focus();
+    els.logo.addEventListener("change", handleLogoUpload);
+    
+    els.removeLogo.addEventListener("click", () => {
+      state.logoImage = null;
+      els.logo.value = "";
+      els.logoControls.classList.add("hidden");
+      generateQr();
+    });
+
+    els.clear.addEventListener("click", () => {
+      els.input.value = "";
+      state.logoImage = null;
+      els.logo.value = "";
+      els.logoControls.classList.add("hidden");
+      generateQr();
+      setStatus("");
+    });
+
+    els.downloadPng.addEventListener("click", () => {
+      const link = document.createElement("a");
+      link.download = `luma-${sanitizeFilename(els.input.value)}.png`;
+      link.href = state.qrDataUrl;
+      link.click();
+      showToast("PNG Downloaded");
+    });
+
+    els.downloadSvg.addEventListener("click", () => {
+      const blob = new Blob([state.qrSvg], { type: "image/svg+xml" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = `luma-${sanitizeFilename(els.input.value)}.svg`;
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast("SVG Exported");
+    });
+
+    els.theme.addEventListener("change", () => {
+      const theme = els.theme.value;
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("luma-theme", theme);
+    });
+
+    // Modal
+    els.privacyBtn.addEventListener("click", () => els.modal.setAttribute("aria-hidden", "false"));
+    els.closeModal.addEventListener("click", () => els.modal.setAttribute("aria-hidden", "true"));
+    els.modal.addEventListener("click", (e) => {
+      if (e.target === els.modal || e.target.classList.contains("modal-glass")) {
+        els.modal.setAttribute("aria-hidden", "true");
+      }
+    });
+
+    // Prevent form submission
+    els.form.addEventListener("submit", (e) => e.preventDefault());
   };
 
-  const closeModal = () => {
-    modal.setAttribute("aria-hidden", "true");
-    if (state.previousFocus instanceof HTMLElement) {
-      state.previousFocus.focus();
-    }
-  };
-
-  privacyBtn.addEventListener("click", openModal);
-  privacyChoicesBtn.addEventListener("click", () => {
-    openModal();
-    if (privacyChoicesHeading instanceof HTMLElement) {
-      privacyChoicesHeading.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  });
-  closeModalBtn.addEventListener("click", closeModal);
-
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      closeModal();
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && modal.getAttribute("aria-hidden") === "false") {
-      closeModal();
-    }
-  });
-
-  const root = document.documentElement;
-  const storedTheme = localStorage.getItem("luna-theme");
-  if (storedTheme) {
-    root.setAttribute("data-theme", storedTheme);
-    themeSelect.value = storedTheme;
+  // Run
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
   }
-
-  themeSelect.addEventListener("change", () => {
-    const selectedTheme = themeSelect.value;
-    root.setAttribute("data-theme", selectedTheme);
-    localStorage.setItem("luna-theme", selectedTheme);
-  });
-
-  year.textContent = String(new Date().getFullYear());
-  updateActionStates();
 })();
