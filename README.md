@@ -2,12 +2,15 @@
 
 Privacy-first QR code generator — static, browser-only, no tracking.
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Deploy](https://github.com/luxbase/luna-qr/actions/workflows/deploy.yml/badge.svg)](https://github.com/luxbase/luna-qr/actions/workflows/deploy.yml)
+
 ## Features
 
 - QR code generation via `qrcode.js`
 - Custom foreground/background colors + transparent mode
 - Logo overlay with auto-ECC upgrade for scannability
-- Download as **PNG / JPEG / WebP** or export as **SVG**
+- Export as **PNG / JPEG / WebP** or **SVG**
 - Camera QR scanner (decodes with `jsQR`)
 - Labeled frame mode
 - Multiple error correction levels
