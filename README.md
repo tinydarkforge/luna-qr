@@ -1,49 +1,47 @@
-# Luna QR Generator
+# Luna QR
 
-Modern, privacy-conscious QR code generator built as a static frontend app.
+Privacy-first QR code generator — static, browser-only, no tracking.
 
-## What it does
+## Features
 
-- Generates QR codes directly in the browser using `qrcode.js`
-- Lets users download generated QR as PNG
-- Supports Dark and Light themes with a lunar purple accent
-- Works on desktop and mobile layouts
-- Includes accessible form controls and keyboard-friendly privacy modal
+- QR code generation via `qrcode.js`
+- Custom foreground/background colors + transparent mode
+- Logo overlay with auto-ECC upgrade for scannability
+- Download as **PNG / JPEG / WebP** or export as **SVG**
+- Camera QR scanner (decodes with `jsQR`)
+- Labeled frame mode
+- Multiple error correction levels
+- Dark & light themes
+- Shareable settings via URL hash
+- Keyboard shortcut: `Ctrl+Enter` / `Cmd+Enter` to generate
+- Fully responsive (desktop + mobile)
 
-## Privacy notes
+## Privacy
 
-- QR content is generated in-browser and is not stored by this app
-- The site uses Google AdSense, which may use cookies/identifiers for ad delivery
+Zero data leaves your browser. No analytics, no tracking, no server.
 
-## Project structure
+## Structure
 
 ```text
 doc/
   index.html
   css/styles.css
   js/main.js
+  js/vendor/
   assets/
+.github/workflows/
+  deploy.yml    → GitHub Pages
+  quality.yml   → CI
 ```
 
-## Local development
+## Dev
 
-No build step is required. Serve `doc/` with any static server.
-
-Example with Python:
+No build step. Serve `doc/` with any static server:
 
 ```bash
-cd public
-python3 -m http.server 3000
+python3 -m http.server 3000 -d doc
 ```
 
-Then open `http://localhost:3000`.
+## Deploy
 
-## Deployment
-
-Deploy as static files (Netlify, GitHub Pages, Vercel static, S3, etc.).
-
-## Maintenance suggestions
-
-- Pin and review third-party scripts periodically
-- Keep privacy language aligned with ad/analytics integrations
-- Add automated accessibility and link checks in CI
+Push to `main` → GitHub Actions deploys `doc/` to Pages. Also works on Netlify, Vercel, S3, etc.
