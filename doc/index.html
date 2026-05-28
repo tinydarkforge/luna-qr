@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="aurora">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta
       name="description"
-      content="LumaQR: Generate premium, private QR codes instantly in your browser. No account, no server-side storage, fast PNG/SVG export with custom logos."
+      content="LunaQR: Generate premium, private QR codes instantly in your browser. No account, no server-side storage, fast PNG/SVG export with custom logos."
     />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href="./" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="LumaQR | Premium QR Code Generator" />
+    <meta property="og:title" content="LunaQR | Premium QR Code Generator" />
     <meta
       property="og:description"
       content="Generate high-quality QR codes instantly. Privacy-first, browser-based, and customizable themes."
@@ -20,14 +20,14 @@
     <meta property="og:url" content="./" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="LumaQR | Premium QR Code Generator" />
+    <meta name="twitter:title" content="LunaQR | Premium QR Code Generator" />
     <meta
       name="twitter:description"
       content="Fast browser-based QR generator with customizable themes and logo support."
     />
     <meta name="twitter:image" content="./assets/luna.webp" />
 
-    <title>LumaQR | Fast, Private, Premium</title>
+    <title>LunaQR | Fast, Private, Premium</title>
     <link rel="icon" type="image/png" href="./assets/luna.webp" />
     <meta name="google-adsense-account" content="ca-pub-6433842942378095" />
 
@@ -48,38 +48,70 @@
     <script src="./js/main.js" defer></script>
   </head>
   <body>
-    <div class="glow-orb orb-1" aria-hidden="true"></div>
-    <div class="glow-orb orb-2" aria-hidden="true"></div>
     <div id="toast-container" aria-live="polite"></div>
 
     <main class="app-container">
       <header class="app-header">
-        <div class="header-badge">
-          <a
-            href="https://github.com/Pamperito74/luna-qr"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="badge-link"
-          >
-            <span class="badge-icon">GitHub</span>
-            <span class="badge-text">v1.1.0</span>
-          </a>
-        </div>
-        <h1>Luma<span>QR</span></h1>
-        <p class="tagline">Private. Instant. Professional.</p>
+        <a
+          href="https://github.com/Pamperito74/luna-qr"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="badge-link"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          <span>v1.2.0</span>
+        </a>
+        <h1>Luna<span>QR</span></h1>
+        <span class="tagline">Privacy-first, browser-only</span>
       </header>
 
       <div class="main-layout">
-        <!-- Sidebar Controls -->
+        <section class="preview-panel">
+          <div class="preview-card card">
+            <div id="qrContainer" class="qr-canvas-wrap">
+              <img
+                src="./assets/placeholder.svg"
+                alt="QR Preview"
+                id="qrImage"
+                width="512"
+                height="512"
+              />
+            </div>
+
+            <div class="action-bar">
+              <button id="downloadBtn" class="btn-primary" disabled>
+                Download PNG
+              </button>
+              <button id="downloadSvgBtn" class="btn-secondary" disabled>
+                Export SVG
+              </button>
+              <button id="clearBtn" class="btn-ghost">Reset</button>
+            </div>
+          </div>
+
+          <div id="formMessage" class="status-message" aria-live="polite"></div>
+        </section>
+
         <aside class="controls-panel card">
           <div class="panel-header">
-            <h2>Configuration</h2>
-            <div class="theme-picker">
-              <select id="themeSelect" aria-label="Select theme">
-                <option value="aurora">Aurora</option>
-                <option value="sunset">Sunset</option>
-                <option value="mint">Mint</option>
-              </select>
+            <h2>Settings</h2>
+            <div class="theme-toggle" role="radiogroup" aria-label="Color theme">
+              <button data-theme="dark" class="theme-btn active" role="radio" aria-checked="true" aria-label="Dark theme">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              </button>
+              <button data-theme="light" class="theme-btn" role="radio" aria-checked="false" aria-label="Light theme">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="5"/>
+                  <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                  <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -88,8 +120,8 @@
               <label for="inputText">Content</label>
               <textarea
                 id="inputText"
-                placeholder="Paste your URL or text here..."
-                rows="3"
+                placeholder="URL or text..."
+                rows="2"
                 maxlength="4296"
                 required
               ></textarea>
@@ -125,7 +157,7 @@
 
               <div class="setting full-width">
                 <div class="label-row">
-                  <label for="marginRange">Safe Margin</label>
+                  <label for="marginRange">Margin</label>
                   <span class="value-tag"><span id="marginValue">1</span></span>
                 </div>
                 <input id="marginRange" type="range" min="0" max="6" step="1" value="1" />
@@ -142,67 +174,38 @@
                 </div>
                 <div id="logoControls" class="hidden">
                   <div class="label-row">
-                    <label for="logoSizeRange">Logo Scale</label>
+                    <label for="logoSizeRange">Scale</label>
                     <span class="value-tag"><span id="logoSizeValue">20</span>%</span>
                   </div>
                   <input id="logoSizeRange" type="range" min="12" max="30" step="1" value="20" />
-                  <button id="removeLogoBtn" type="button" class="btn-text">Remove Logo</button>
+                  <button id="removeLogoBtn" type="button" class="btn-text">Remove logo</button>
                 </div>
               </div>
             </div>
           </form>
         </aside>
-
-        <!-- Preview Area -->
-        <section class="preview-panel">
-          <div class="preview-card card">
-            <div id="qrContainer" class="qr-canvas-wrap">
-              <img
-                src="./assets/moon.webp"
-                alt="QR Preview"
-                id="qrImage"
-                width="512"
-                height="512"
-              />
-            </div>
-            
-            <div class="action-bar">
-              <button id="downloadBtn" class="btn-primary" disabled>
-                Download PNG
-              </button>
-              <button id="downloadSvgBtn" class="btn-secondary" disabled>
-                Export SVG
-              </button>
-              <button id="clearBtn" class="btn-ghost">Reset</button>
-            </div>
-          </div>
-          
-          <div id="formMessage" class="status-message" aria-live="polite"></div>
-        </section>
       </div>
 
       <footer class="app-footer">
-        <p>&copy; <span id="year"></span> LumaQR | Private Browser Generation</p>
+        <p>&copy; <span id="year"></span> LunaQR &mdash; All processing happens in your browser.</p>
         <div class="footer-links">
-          <button id="privacy-btn">Privacy Policy</button>
-          <a href="https://github.com/Pamperito74/luna-qr" target="_blank" rel="noopener noreferrer">Source Code</a>
+          <button id="privacy-btn">Privacy</button>
+          <a href="https://github.com/Pamperito74/luna-qr" target="_blank" rel="noopener noreferrer">Source</a>
         </div>
       </footer>
     </main>
 
-    <!-- Privacy Modal (Simplified for Premium feel) -->
     <div id="privacy-modal" role="dialog" aria-modal="true" aria-hidden="true">
-      <div class="modal-glass">
-        <div class="modal-content">
-          <h2>Privacy at LumaQR</h2>
-          <div class="scroll-area">
-            <p><strong>100% Client-Side.</strong> Your data never leaves your browser. We don't have a backend to store your URLs or text.</p>
-            <p><strong>Local Storage.</strong> We only save your theme preference locally.</p>
-            <p><strong>Third-Parties.</strong> We use Google AdSense for hosting costs. They may use cookies for ad delivery.</p>
-            <p><strong>Contact.</strong> <a href="mailto:luna-administrator@proton.me">luna-administrator@proton.me</a></p>
-          </div>
-          <button id="close-modal" class="btn-primary">Got it</button>
+      <div class="modal-glass"></div>
+      <div class="modal-content">
+        <h2>Privacy at LunaQR</h2>
+        <div class="scroll-area">
+          <p><strong>100% Client-Side.</strong> Your data never leaves your browser. We don't have a backend to store your URLs or text.</p>
+          <p><strong>Local Storage.</strong> We only save your theme preference locally.</p>
+          <p><strong>Third-Parties.</strong> We use Google AdSense for hosting costs. They may use cookies for ad delivery.</p>
+          <p><strong>Contact.</strong> <a href="mailto:luna-administrator@proton.me">luna-administrator@proton.me</a></p>
         </div>
+        <button id="close-modal" class="btn-primary">Got it</button>
       </div>
     </div>
   </body>

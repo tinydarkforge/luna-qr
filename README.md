@@ -6,7 +6,7 @@ Modern, privacy-conscious QR code generator built as a static frontend app.
 
 - Generates QR codes directly in the browser using `qrcode.js`
 - Lets users download generated QR as PNG
-- Supports multiple color themes (Aurora, Sunset, Mint)
+- Supports Dark and Light themes with a lunar purple accent
 - Works on desktop and mobile layouts
 - Includes accessible form controls and keyboard-friendly privacy modal
 
@@ -18,7 +18,7 @@ Modern, privacy-conscious QR code generator built as a static frontend app.
 ## Project structure
 
 ```text
-public/
+doc/
   index.html
   css/styles.css
   js/main.js
@@ -27,7 +27,7 @@ public/
 
 ## Local development
 
-No build step is required. Serve `public/` with any static server.
+No build step is required. Serve `doc/` with any static server.
 
 Example with Python:
 

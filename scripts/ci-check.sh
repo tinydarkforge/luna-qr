@@ -5,11 +5,11 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
 required_files=(
-  "public/index.html"
-  "public/css/styles.css"
-  "public/js/main.js"
-  "public/robots.txt"
-  "public/sitemap.xml"
+  "doc/index.html"
+  "doc/css/styles.css"
+  "doc/js/main.js"
+  "doc/robots.txt"
+  "doc/sitemap.xml"
 )
 
 for file in "${required_files[@]}"; do
@@ -30,11 +30,11 @@ awk '
       has_rel=0;
     }
   }
-' public/index.html
+' doc/index.html
 
 # Ensure anti-user copy/paste blockers are not present.
 for pattern in 'contextmenu' '"copy"' '"cut"' '"paste"'; do
-  if rg -n "$pattern" public/js/main.js >/dev/null; then
+  if rg -n "$pattern" doc/js/main.js >/dev/null; then
     echo "Blocked interaction pattern found in JS: $pattern"
     exit 1
   fi
@@ -44,16 +44,16 @@ done
 index_refs=(
   "css/styles.css"
   "js/main.js"
-  "assets/moon.webp"
   "assets/luna.webp"
+  "assets/placeholder.svg"
 )
 
 for ref in "${index_refs[@]}"; do
-  if ! rg -n "$ref" public/index.html >/dev/null; then
+  if ! rg -n "$ref" doc/index.html >/dev/null; then
     echo "index.html is missing reference: $ref"
     exit 1
   fi
-  [[ -f "public/$ref" ]] || { echo "Referenced file missing: public/$ref"; exit 1; }
+  [[ -f "doc/$ref" ]] || { echo "Referenced file missing: doc/$ref"; exit 1; }
 done
 
 echo "ci-check: OK"

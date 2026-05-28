@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$ROOT_DIR/public"
+cd "$ROOT_DIR/doc"
 
 PORT="${1:-4173}"
 
@@ -28,7 +28,7 @@ curl -fsS "${BASE_URL}/js/main.js" >/dev/null
 curl -fsS "${BASE_URL}/robots.txt" >/dev/null
 curl -fsS "${BASE_URL}/sitemap.xml" >/dev/null
 
-rg -n 'id="themeSelect"' /tmp/luna-qr-index.html >/dev/null
+rg -n 'class="theme-btn"' /tmp/luna-qr-index.html >/dev/null
 rg -n 'id="qrForm"' /tmp/luna-qr-index.html >/dev/null
 rg -n 'id="privacy-modal"' /tmp/luna-qr-index.html >/dev/null
 

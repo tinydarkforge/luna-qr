@@ -2,13 +2,11 @@
   const $ = (id) => document.getElementById(id);
   const $$ = (selector) => document.querySelectorAll(selector);
 
-  // Constants
   const DEBOUNCE_MS = 300;
   const MAX_INPUT_LENGTH = 4296;
   const LOGO_PADDING_RATIO = 0.18;
   const LOGO_RADIUS_RATIO = 0.18;
 
-  // State
   const state = {
     qrDataUrl: null,
     qrSvg: null,
@@ -16,44 +14,33 @@
     debounceTimer: null,
   };
 
-  // DOM Elements
   const els = {
     input: $("inputText"),
     form: $("qrForm"),
     qrImage: $("qrImage"),
     msg: $("formMessage"),
     year: $("year"),
-    theme: $("themeSelect"),
-    
-    // Buttons
-    generate: $("generateBtn"),
     clear: $("clearBtn"),
     downloadPng: $("downloadBtn"),
     downloadSvg: $("downloadSvgBtn"),
     removeLogo: $("removeLogoBtn"),
-    
-    // Settings
     ecc: $("eccSelect"),
     size: $("sizeRange"),
     margin: $("marginRange"),
     bgMode: $("bgModeSelect"),
     logo: $("logoInput"),
     logoSize: $("logoSizeRange"),
-    
-    // Values
     sizeVal: $("sizeValue"),
     marginVal: $("marginValue"),
     logoSizeVal: $("logoSizeValue"),
-    
-    // Containers
     logoControls: $("logoControls"),
     modal: $("privacy-modal"),
     closeModal: $("close-modal"),
     privacyBtn: $("privacy-btn"),
-    toastContainer: $("toast-container")
+    toastContainer: $("toast-container"),
+    themeBtns: $$(".theme-btn"),
   };
 
-  // Utilities
   const showToast = (message) => {
     const el = document.createElement("div");
     el.className = "toast";
@@ -82,12 +69,10 @@
     img.src = src;
   });
 
-  // QR Logic
   const getQrOptions = () => {
     const bgMode = els.bgMode.value;
     const light = bgMode === "transparent" ? "#0000" : bgMode === "dark" ? "#03050a" : "#ffffff";
     const dark = bgMode === "dark" ? "#f0f4ff" : "#000000";
-    
     return {
       width: parseInt(els.size.value),
       margin: parseInt(els.margin.value),
@@ -108,57 +93,41 @@
     const bx = x - padding;
     const by = y - padding;
     const radius = totalSize * LOGO_RADIUS_RATIO;
-
-    // Draw background rounded rect
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.roundRect(bx, by, totalSize, totalSize, radius);
     ctx.fill();
-
-    // Draw logo
     ctx.drawImage(logo, x, y, logoSize, logoSize);
   };
 
   const generateQr = async () => {
     const text = els.input.value.trim();
     if (!text) {
-      els.qrImage.src = "./assets/moon.webp";
+      els.qrImage.src = "./assets/placeholder.svg";
       state.qrDataUrl = null;
       state.qrSvg = null;
       updateButtons();
       return;
     }
-
     try {
       const options = getQrOptions();
-      
-      // Generate PNG
       const canvas = document.createElement("canvas");
       await QRCode.toCanvas(canvas, text, options);
-      
       if (state.logoImage) {
         addLogoToCanvas(canvas, state.logoImage, parseInt(els.logoSize.value));
       }
-      
       state.qrDataUrl = canvas.toDataURL("image/png");
       els.qrImage.src = state.qrDataUrl;
-
-      // Generate SVG
       const svgString = await QRCode.toString(text, { ...options, type: "svg" });
-      
       if (state.logoImage) {
-        // Embed logo in SVG
         const logoBase64 = state.logoImage.src;
         const logoSize = options.width * (parseInt(els.logoSize.value) / 100);
         const pos = (options.width - logoSize) / 2;
-        
-        // Simple SVG injection for logo
         const logoSvg = `<image href="${logoBase64}" x="${pos}" y="${pos}" width="${logoSize}" height="${logoSize}" />`;
         state.qrSvg = svgString.replace("</svg>", `${logoSvg}</svg>`);
       } else {
         state.qrSvg = svgString;
       }
-
       setStatus("QR code updated");
       updateButtons();
     } catch (err) {
@@ -178,7 +147,6 @@
     state.debounceTimer = setTimeout(generateQr, DEBOUNCE_MS);
   };
 
-  // Event Handlers
   const handleInput = () => {
     els.sizeVal.textContent = els.size.value;
     els.marginVal.textContent = els.margin.value;
@@ -189,12 +157,10 @@
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (file.size > 2 * 1024 * 1024) {
       setStatus("Logo too large (max 2MB)", true);
       return;
     }
-
     const reader = new FileReader();
     reader.onload = async (event) => {
       state.logoImage = await loadImage(event.target.result);
@@ -204,22 +170,28 @@
     reader.readAsDataURL(file);
   };
 
-  // Init
-  const init = () => {
-    // UI Init
-    els.year.textContent = new Date().getFullYear();
-    const savedTheme = localStorage.getItem("luma-theme") || "aurora";
-    document.documentElement.setAttribute("data-theme", savedTheme);
-    els.theme.value = savedTheme;
+  const setTheme = (theme) => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("luna-theme", theme);
+    els.themeBtns.forEach((btn) => {
+      const isActive = btn.getAttribute("data-theme") === theme;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-checked", isActive.toString());
+    });
+  };
 
-    // Listeners
+  const init = () => {
+    els.year.textContent = new Date().getFullYear();
+    const savedTheme = localStorage.getItem("luna-theme") || "dark";
+    setTheme(savedTheme);
+
     els.input.addEventListener("input", debouncedGenerate);
-    [els.size, els.margin, els.ecc, els.bgMode, els.logoSize].forEach(el => {
+    [els.size, els.margin, els.ecc, els.bgMode, els.logoSize].forEach((el) => {
       el.addEventListener("input", handleInput);
     });
 
     els.logo.addEventListener("change", handleLogoUpload);
-    
+
     els.removeLogo.addEventListener("click", () => {
       state.logoImage = null;
       els.logo.value = "";
@@ -238,7 +210,7 @@
 
     els.downloadPng.addEventListener("click", () => {
       const link = document.createElement("a");
-      link.download = `luma-${sanitizeFilename(els.input.value)}.png`;
+      link.download = `luna-${sanitizeFilename(els.input.value)}.png`;
       link.href = state.qrDataUrl;
       link.click();
       showToast("PNG Downloaded");
@@ -248,20 +220,33 @@
       const blob = new Blob([state.qrSvg], { type: "image/svg+xml" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.download = `luma-${sanitizeFilename(els.input.value)}.svg`;
+      link.download = `luna-${sanitizeFilename(els.input.value)}.svg`;
       link.href = url;
       link.click();
       URL.revokeObjectURL(url);
       showToast("SVG Exported");
     });
 
-    els.theme.addEventListener("change", () => {
-      const theme = els.theme.value;
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("luma-theme", theme);
+    els.themeBtns.forEach((btn) => {
+      btn.addEventListener("click", () => setTheme(btn.getAttribute("data-theme")));
+      btn.addEventListener("keydown", (e) => {
+        const btns = Array.from(els.themeBtns);
+        const idx = btns.indexOf(btn);
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+          e.preventDefault();
+          const next = btns[(idx + 1) % btns.length];
+          next.focus();
+          next.click();
+        }
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          const prev = btns[(idx - 1 + btns.length) % btns.length];
+          prev.focus();
+          prev.click();
+        }
+      });
     });
 
-    // Modal
     els.privacyBtn.addEventListener("click", () => els.modal.setAttribute("aria-hidden", "false"));
     els.closeModal.addEventListener("click", () => els.modal.setAttribute("aria-hidden", "true"));
     els.modal.addEventListener("click", (e) => {
@@ -270,11 +255,9 @@
       }
     });
 
-    // Prevent form submission
     els.form.addEventListener("submit", (e) => e.preventDefault());
   };
 
-  // Run
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {

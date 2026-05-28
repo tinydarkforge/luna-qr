@@ -1,15 +1,15 @@
-# 🌙 LumaQR
+# 🌙 LunaQR
 
 **Private. Instant. Professional.**
 
-LumaQR is a premium, privacy-first QR code generator that runs entirely in your browser. No server-side processing, no data tracking, just high-quality QR codes delivered instantly.
+LunaQR is a premium, privacy-first QR code generator that runs entirely in your browser. No server-side processing, no data tracking, just high-quality QR codes delivered instantly.
 
-![LumaQR Preview](./assets/luna.webp)
+![LunaQR Preview](./assets/luna.webp)
 
 ## ✨ Features
 
 -   **Privacy by Design**: All generation happens client-side. Your URLs, text, and logos never leave your browser.
--   **Premium Aesthetics**: A modern, glassmorphic UI with multiple themes (Aurora, Sunset, Mint).
+-   **Premium Aesthetics**: A modern UI with Dark and Light themes inspired by GitHub's color system.
 -   **Real-time Generation**: See your changes instantly as you type.
 -   **Custom Branding**: Upload your logo and scale it to fit perfectly within the QR code.
 -   **High-Quality Exports**:
@@ -22,7 +22,7 @@ LumaQR is a premium, privacy-first QR code generator that runs entirely in your 
 
 ## 🚀 Deployment
 
-LumaQR is a pure static web application, making it perfect for hosting on **GitHub Pages**, Netlify, or Vercel.
+LunaQR is a pure static web application, making it perfect for hosting on **GitHub Pages**, Netlify, or Vercel.
 
 ### Hosting on GitHub Pages
 1. Push this repository to GitHub.
@@ -39,7 +39,7 @@ LumaQR is a pure static web application, making it perfect for hosting on **GitH
 
 ## 📦 Installation & Local Development
 
-Since LumaQR is static, you don't need to install any dependencies.
+Since LunaQR is static, you don't need to install any dependencies.
 
 1. Clone the repository:
    ```bash
