@@ -4,15 +4,11 @@
 
   const DEBOUNCE_MS = 300;
   const MAX_INPUT_LENGTH = 4296;
-  const LOGO_PADDING_RATIO = 0.18;
-  const LOGO_RADIUS_RATIO = 0.18;
-  const LOGO_ECC_THRESHOLD = 20;
   const SCAN_INTERVAL_MS = 300;
 
   const state = {
     qrDataUrl: null,
     qrSvg: null,
-    logoImage: null,
     debounceTimer: null,
     generating: false,
     scanTimer: null,
@@ -37,21 +33,14 @@
     scannerVideo: $("scannerVideo"),
     scannerCanvas: $("scannerCanvas"),
     closeScannerBtn: $("closeScannerBtn"),
-    removeLogo: $("removeLogoBtn"),
     ecc: $("eccSelect"),
     size: $("sizeRange"),
     margin: $("marginRange"),
     bgMode: $("bgModeSelect"),
     fgColor: $("fgColor"),
     bgColor: $("bgColor"),
-    logo: $("logoInput"),
-    logoPreview: $("logoPreview"),
-    logoDummy: $("logoDummy"),
-    logoSize: $("logoSizeRange"),
     sizeVal: $("sizeValue"),
     marginVal: $("marginValue"),
-    logoSizeVal: $("logoSizeValue"),
-    logoControls: $("logoControls"),
     frameToggle: $("frameToggle"),
     sizePresets: $$(".size-preset"),
     modal: $("privacy-modal"),
@@ -81,14 +70,6 @@
     return text.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30) || "qr-code";
   };
 
-  const loadImage = (src) => new Promise((res, rej) => {
-    const img = new Image();
-    img.onload = () => res(img);
-    img.onerror = rej;
-    img.crossOrigin = "anonymous";
-    img.src = src;
-  });
-
   const setLoading = (loading) => {
     state.generating = loading;
     els.qrLoading.classList.toggle("hidden", !loading);
@@ -105,24 +86,6 @@
       color: { dark: fg, light: bg },
       type: "image/png"
     };
-  };
-
-  const addLogoToCanvas = (canvas, logo, scale) => {
-    const ctx = canvas.getContext("2d");
-    const size = Math.min(canvas.width, canvas.height);
-    const logoSize = size * (scale / 100);
-    const padding = logoSize * LOGO_PADDING_RATIO;
-    const totalSize = logoSize + padding * 2;
-    const x = (canvas.width - logoSize) / 2;
-    const y = (canvas.height - logoSize) / 2;
-    const bx = x - padding;
-    const by = y - padding;
-    const radius = totalSize * LOGO_RADIUS_RATIO;
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.roundRect(bx, by, totalSize, totalSize, radius);
-    ctx.fill();
-    ctx.drawImage(logo, x, y, logoSize, logoSize);
   };
 
   const generateQr = async () => {
@@ -142,9 +105,7 @@
       const canvas = document.createElement("canvas");
       await QRCode.toCanvas(canvas, text, options);
       els.qrEmptyState.classList.add("hidden");
-      if (state.logoImage) {
-        addLogoToCanvas(canvas, state.logoImage, parseInt(els.logoSize.value));
-      }
+
       if (els.frameToggle.checked) {
         const framed = document.createElement("canvas");
         framed.width = canvas.width;
@@ -161,17 +122,15 @@
       } else {
         state.qrDataUrl = canvas.toDataURL("image/png");
       }
-      els.qrImage.src = state.qrDataUrl;
-      const svgString = await QRCode.toString(text, { ...options, type: "svg" });
-      if (state.logoImage) {
-        const logoBase64 = state.logoImage.src;
-        const logoSize = options.width * (parseInt(els.logoSize.value) / 100);
-        const pos = (options.width - logoSize) / 2;
-        const logoSvg = `<image href="${logoBase64}" x="${pos}" y="${pos}" width="${logoSize}" height="${logoSize}" />`;
-        state.qrSvg = svgString.replace("</svg>", `${logoSvg}</svg>`);
-      } else {
-        state.qrSvg = svgString;
-      }
+
+      els.qrImage.style.opacity = "0";
+      requestAnimationFrame(() => {
+        els.qrImage.src = state.qrDataUrl;
+        els.qrImage.onload = () => { els.qrImage.style.opacity = "1"; };
+      });
+
+      state.qrSvg = await QRCode.toString(text, { ...options, type: "svg" });
+
       if (!state.restoringHash) pushHash();
       setStatus("QR code updated");
       updateButtons();
@@ -200,7 +159,6 @@
     if (els.margin.value !== "1") params.set("margin", els.margin.value);
     if (els.bgMode.value !== "off") params.set("bgMode", els.bgMode.value);
     if (els.frameToggle.checked) params.set("frame", "1");
-    if (els.logoSize.value !== "20") params.set("logoScale", els.logoSize.value);
     const hash = params.toString();
     history.replaceState(null, "", hash ? "#" + hash : window.location.pathname);
   };
@@ -218,7 +176,6 @@
     if (params.has("margin")) { els.margin.value = params.get("margin"); changed = true; }
     if (params.has("bgMode")) { els.bgMode.value = params.get("bgMode"); changed = true; }
     if (params.has("frame")) { els.frameToggle.checked = params.get("frame") === "1"; changed = true; }
-    if (params.has("logoScale")) { els.logoSize.value = params.get("logoScale"); changed = true; }
     if (params.has("size")) {
       els.sizePresets.forEach((btn) => btn.classList.toggle("active", parseInt(btn.dataset.size) === parseInt(params.get("size"))));
     }
@@ -239,12 +196,6 @@
   const handleInput = () => {
     els.sizeVal.textContent = els.size.value;
     els.marginVal.textContent = els.margin.value;
-    els.logoSizeVal.textContent = els.logoSize.value;
-    const logoScale = parseInt(els.logoSize.value);
-    if (state.logoImage && logoScale > LOGO_ECC_THRESHOLD && els.ecc.value !== "H") {
-      els.ecc.value = "H";
-      showToast(`Logo ${logoScale}% — ECC auto-upgraded to Maximum for scannability`);
-    }
     debouncedGenerate();
   };
 
@@ -253,33 +204,6 @@
     const bgLabel = els.bgColor.parentElement.querySelector(".color-label");
     if (fgLabel) fgLabel.textContent = els.fgColor.value;
     if (bgLabel) bgLabel.textContent = els.bgColor.value;
-  };
-
-  const handleLogoUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setStatus("Logo too large (max 2MB)", true);
-      return;
-    }
-    if (!file.type.startsWith("image/")) {
-      setStatus("Please upload an image file", true);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        state.logoImage = await loadImage(event.target.result);
-        els.logoControls.classList.remove("hidden");
-        els.logoPreview.src = event.target.result;
-        els.logoPreview.classList.remove("hidden");
-        els.logoDummy.classList.add("hidden");
-        generateQr();
-      } catch {
-        setStatus("Failed to load image. Try a different file.", true);
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   const setTheme = (theme) => {
@@ -380,37 +304,19 @@
     setTheme(savedTheme);
 
     els.input.addEventListener("input", debouncedGenerate);
-    [els.size, els.margin, els.ecc, els.bgMode, els.logoSize, els.fgColor, els.bgColor, els.frameToggle].forEach((el) => {
+    [els.size, els.margin, els.ecc, els.bgMode, els.fgColor, els.bgColor, els.frameToggle].forEach((el) => {
       el.addEventListener("input", handleInput);
     });
 
     els.fgColor.addEventListener("input", updateColorLabels);
     els.bgColor.addEventListener("input", updateColorLabels);
 
-    els.logo.addEventListener("change", handleLogoUpload);
-
     els.sizePresets.forEach((btn) => {
       btn.addEventListener("click", () => setSize(parseInt(btn.dataset.size)));
     });
 
-    els.removeLogo.addEventListener("click", () => {
-      state.logoImage = null;
-      els.logo.value = "";
-      els.logoControls.classList.add("hidden");
-      els.logoPreview.classList.add("hidden");
-      els.logoPreview.src = "";
-      els.logoDummy.classList.remove("hidden");
-      generateQr();
-    });
-
     els.clear.addEventListener("click", () => {
       els.input.value = "";
-      state.logoImage = null;
-      els.logo.value = "";
-      els.logoControls.classList.add("hidden");
-      els.logoPreview.classList.add("hidden");
-      els.logoPreview.src = "";
-      els.logoDummy.classList.remove("hidden");
       els.qrEmptyState.classList.remove("hidden");
       generateQr();
       setStatus("");
